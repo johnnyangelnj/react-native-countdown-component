@@ -41,6 +41,12 @@ class CountDown extends React.Component {
     AppState.addEventListener('change', this._handleAppStateChange);
   }
 
+  componentWillReceiveProps(nextProps) {
+    this.setState({
+    until: nextProps.until,
+    });
+  }
+
   componentWillUnmount() {
     clearInterval(this.timer);
     AppState.removeEventListener('change', this._handleAppStateChange);
@@ -69,32 +75,23 @@ class CountDown extends React.Component {
 
   updateTimer = () => {
     const {until} = this.state;
-
     if (until <= 1) {
-      clearInterval(this.timer);
-      if (this.onFinish) {
-        this.onFinish();
-        this.setState({until: 0});
-      }
-    } else {
-      this.setState({until: until - 1});
+    // clearInterval(this.timer);
+    this.props.onFinish();
+    // if (this.onFinish) {
+    // this.onFinish();
+    // }
     }
+    const until2 = until - 1;
+    this.setState({until: until2 < 0 ? 0 : until2});
   };
 
   renderDigit = (d) => {
-    const {digitBgColor, digitTxtColor, size} = this.props;
+    const {digitCountView, digitTxt} = this.props;
     return (
-      <View style={[
-        styles.digitCont,
-        {backgroundColor: digitBgColor},
-        {width: size * 2.3, height: size * 2.6},
-      ]}>
-        <Text style={[
-          styles.digitTxt,
-          {fontSize: size},
-          {color: digitTxtColor}
-        ]}>
-          {d}
+      <View style={[styles.digitCountView, digitCountView]}>
+        <Text style={[styles.digitTxt, digitTxt]}>
+          {d ? d : null}
         </Text>
       </View>
     );
@@ -102,19 +99,12 @@ class CountDown extends React.Component {
 
   renderDoubleDigits = (label, digits) => {
     const {timeTxtColor, size} = this.props;
-
+    if(isNaN(digits)) {
+      return null;
+    }
     return (
-      <View key={label} style={styles.doubleDigitCont}>
-        <View style={styles.timeInnerCont}>
-          {this.renderDigit(digits)}
-        </View>
-        <Text style={[
-          styles.timeTxt,
-          {fontSize: size / 1.8},
-          {color: timeTxtColor},
-        ]}>
-          {label}
-        </Text>
+      <View style={styles.doubleDigitCont}>
+        {this.renderDigit(digits)}
       </View>
     );
   };
@@ -131,18 +121,24 @@ class CountDown extends React.Component {
         style={styles.timeCont}
         onPress={this.props.onPress}
       >
-        {_.includes(timeToShow, 'D') ? this.renderDoubleDigits('Days', newTime[0]) : null}
-        {_.includes(timeToShow, 'H') ? this.renderDoubleDigits('Hours', newTime[1]) : null}
-        {_.includes(timeToShow, 'M') ? this.renderDoubleDigits('Minutes', newTime[2]) : null}
-        {_.includes(timeToShow, 'S') ? this.renderDoubleDigits('Seconds', newTime[3]) : null}
+        {/* {_.includes(timeToShow, 'D') ? this.renderDoubleDigits('Days', newTime[0]) : null} */}
+       
       </Component>
     );
   };
 
   render() {
+    const {timeToShow, timeCont} = this.props;
+    const {until} = this.state;
+    const {days, hours, minutes, seconds} = this.getTimeLeft();
+    const newTime = sprintf('%02d:%02d:%02d:%02d', days, hours, minutes, seconds).split(':');
+    const Component = this.props.onPress ? TouchableOpacity : View;
+
     return (
-      <View style={this.props.style}>
-        {this.renderCountDown()}
+      <View style={[styles.timeCont, timeCont]}>
+        {_.includes(timeToShow, 'H') ? this.renderDoubleDigits('Hours', newTime[1]) : ''}
+        {_.includes(timeToShow, 'M') ? this.renderDoubleDigits('Minutes', newTime[2]) : ''}
+        {_.includes(timeToShow, 'S') ? this.renderDoubleDigits('Seconds', newTime[3]) : ''}
       </View>
     );
   }
@@ -154,7 +150,7 @@ CountDown.defaultProps = {
   timeTxtColor: DEFAULT_TIME_TXT_COLOR,
   timeToShow: DEFAULT_TIME_TO_SHOW,
   until: 0,
-  size: 15,
+  size: 13,
 };
 
 const styles = StyleSheet.create({
@@ -172,12 +168,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  digitCont: {
-
-    borderRadius: 5,
-    marginHorizontal: 2,
+  digitCountView: {
+    marginHorizontal: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    width: 20,
+    height: 20,
   },
   doubleDigitCont: {
     justifyContent: 'center',
@@ -186,6 +182,7 @@ const styles = StyleSheet.create({
   digitTxt: {
     color: 'white',
     fontWeight: 'bold',
+    padding: 1,
   },
 });
 
